@@ -197,7 +197,3 @@ Türk İK aramalarıyla canlı bir çalıştırma:
 **Yanıt sınıflandırma**
 
 ![Yanıt sınıflandırma](docs/screenshots/classify.png)
-
-## Demo
-
-_TODO: Loom demo linkini ekle._
