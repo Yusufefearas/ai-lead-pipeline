@@ -1,0 +1,7 @@
+full_name,company,reply,reply_category,reply_sentiment,suggested_crm_status,suggested_next_step,classification_reason
+Elif Yıldız,Vestel,"Merhaba, kulağa ilgi çekici geliyor. Önümüzdeki hafta 15 dakikalık kısa bir görüşme ayarlayabilir miyiz?",INTERESTED,positive,MEETING,Görüşme için uygun bir zaman ayarlayın.,"Elif Yıldız, kısa bir görüşme talep ediyor."
+Burak Demir,Getir,Teşekkürler ama şu an ekip için böyle bir ihtiyacımız yok.,NOT_INTERESTED,neutral,NOT_INTERESTED,İlerideki fırsatlar için iletişimde kalın.,Ekip için şu an bir ihtiyaçları olmadığını belirttiler.
+Zeynep Kaya,Türk Telekom,Fiyatlandırma nasıl işliyor? Kişi başı aylık maliyet nedir ve minimum kişi sayısı var mı?,QUESTION,neutral,NURTURE,Fiyatlandırma bilgilerini iletmek için Zeynep Hanım ile iletişime geçin.,Zeynep Hanım fiyatlandırma hakkında bilgi talep ediyor.
+Mert Aydın,Mavi,"Yıllık iznimdeyim, 7 Temmuz'da ofise döneceğim. Sonrasında tekrar yazabilirsiniz.",OUT_OF_OFFICE,neutral,FOLLOW_UP_LATER,7 Temmuz'dan sonra tekrar yazın.,"Mert Aydın, yıllık izinde olduğunu belirtiyor."
+Selin Arslan,Pegasus Airlines,"Lütfen beni bu listeden çıkarın, bu tür mesajlar almak istemiyorum.",UNSUBSCRIBE,negative,DO_NOT_CONTACT,Kişiyi listeden çıkarın.,"Kişi, bu tür mesajlar almak istemediğini belirtti."
+Canan Öztürk,Trendyol,"Şu an çok yoğunuz, birkaç ay sonra tekrar değerlendirebilir miyiz?",OTHER,neutral,NURTURE,İki ay sonra tekrar iletişime geçin.,"Şu an yoğun olduklarını belirtiyorlar, ancak ileride değerlendirebileceklerini söylüyorlar."
