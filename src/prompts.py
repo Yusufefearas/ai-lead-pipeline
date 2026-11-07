@@ -5,40 +5,26 @@ outreach copy (LinkedIn DM + cold email) is written in Turkish.
 """
 from __future__ import annotations
 
+from .brand import get_brand
 from .models import CleanLead, EnrichmentResult
 
-# Brand brief — verifiable facts about Northwind English used to ground the AI.
-# NOTE: confirm/adjust the proof numbers before a real campaign.
-_COMPANY = (
-    "Northwind English — Turkey's online English-SPEAKING training service.\n"
-    "What it is:\n"
-    "- 1-on-1 live speaking lessons with native English-speaking instructors (US-based team).\n"
-    "- Low-friction: microphone only (no camera), short 10/20/30-minute sessions, "
-    "2-5 days a week, scheduled around a busy work life.\n"
-    "- AI-supported platform gives instant feedback on mistakes; a progress report after every lesson.\n"
-    "- Levels A1-C2, with personalized programs for companies and teams.\n"
-    "Proof points (the company's own figures — use naturally, never as hype):\n"
-    "- Trusted by 100+ corporate companies and 37,000+ learners.\n"
-    "- Focus is real, usable speaking ability fast — not grammar memorization.\n"
-    "Why HR cares:\n"
-    "- Builds employees' confidence to speak English in meetings, with global teams, and with customers.\n"
-    "- Measurable progress (reports), flexible scheduling, manageable per-person cost."
-)
 
 # Shared copywriting guidance for outreach messages.
-_COPYWRITING = (
-    "Write like a sharp B2B growth marketer, not a generic sales bot:\n"
-    "- Open with the recipient's world or desired outcome, not with us.\n"
-    "- Make ONE specific, concrete value tied to their likely pain point.\n"
-    "- You MAY cite a real proof point (e.g. '100+ kurum, 37.000+ öğrenci') where it fits naturally.\n"
-    "- Confident and warm; persuasive but never exaggerated, salesy, or false.\n"
-    "- Tight and skimmable; one single, easy CTA."
-)
+def _copywriting() -> str:
+    proof = get_brand().proof_short
+    return (
+        "Write like a sharp B2B growth marketer, not a generic sales bot:\n"
+        "- Open with the recipient's world or desired outcome, not with us.\n"
+        "- Make ONE specific, concrete value tied to their likely pain point.\n"
+        f"- You MAY cite a real proof point (e.g. '{proof}') where it fits naturally.\n"
+        "- Confident and warm; persuasive but never exaggerated, salesy, or false.\n"
+        "- Tight and skimmable; one single, easy CTA."
+    )
 
 
 def enrichment_prompt(lead: CleanLead) -> str:
     """Single prompt that produces company intel + pain + score + strategy."""
-    return f"""You are an experienced B2B sales analyst for {_COMPANY}
+    return f"""You are an experienced B2B sales analyst for {get_brand().brief()}
 
 IMPORTANT framing: this person is a potential CORPORATE BUYER who would
 purchase English-speaking training FOR THEIR TEAM / COMPANY — NOT an
@@ -84,7 +70,7 @@ Rules:
 
 
 def linkedin_dm_prompt(lead: CleanLead, e: EnrichmentResult) -> str:
-    return f"""You write short, personalized LinkedIn DMs in TURKISH on behalf of {_COMPANY}
+    return f"""You write short, personalized LinkedIn DMs in TURKISH on behalf of {get_brand().brief()}
 
 Recipient:
 - Name: {lead.full_name}
@@ -94,7 +80,7 @@ Recipient:
 - Outreach angle: {e.outreach_angle}
 - Key message: {e.key_message}
 
-{_COPYWRITING}
+{_copywriting()}
 
 Write ONE LinkedIn DM in Turkish.
 
@@ -107,7 +93,7 @@ Requirements:
   with global teams / customers), and cite a proof point if it fits.
 - End with a low-pressure CTA (a short question or offer to share more).
 - Do NOT add placeholder text like [Your Name] or [Adınız]. If you sign off,
-  sign simply as "Northwind English ekibi".
+  sign simply as "{get_brand().signature}".
 
 Return a JSON object: {{"linkedin_dm": "..."}}
 JSON only. No markdown.
@@ -116,7 +102,7 @@ JSON only. No markdown.
 
 def linkedin_followup_prompt(lead: CleanLead, e: EnrichmentResult, first_dm: str) -> str:
     """A short Turkish follow-up DM, sent ~3-4 days after the first if no reply."""
-    return f"""You write a SHORT Turkish LinkedIn follow-up message on behalf of {_COMPANY}
+    return f"""You write a SHORT Turkish LinkedIn follow-up message on behalf of {get_brand().brief()}
 
 This is the SECOND touch, sent a few days after the first message got no reply.
 
@@ -138,10 +124,10 @@ Requirements:
 - Add ONE new angle or a lightweight, concrete value (e.g. a practical idea,
   a relevant observation, or a no-strings offer like a short free demo).
 - Do NOT invent statistics or percentages. You MAY cite the real proof points
-  (100+ kurum, 37.000+ öğrenci) if it fits naturally.
+  ({get_brand().proof_short}) if it fits naturally.
 - Do not repeat the first message. Do not guilt-trip about no reply.
 - End with a very soft CTA (e.g. "uygun olmazsa hiç sorun değil").
-- Sign off as "Northwind English ekibi". No placeholders like [Adınız].
+- Sign off as "{get_brand().signature}". No placeholders like [Adınız].
 
 Return a JSON object: {{"linkedin_followup": "..."}}
 JSON only. No markdown.
@@ -150,7 +136,7 @@ JSON only. No markdown.
 
 def reply_classification_prompt(reply_text: str, lead_name: str = "", company: str = "") -> str:
     """Classify an inbound reply to the outbound campaign and suggest a CRM action."""
-    return f"""You triage inbound replies to a B2B outreach campaign for {_COMPANY.splitlines()[0]}
+    return f"""You triage inbound replies to a B2B outreach campaign for {get_brand().name}
 
 Reply is from {lead_name or "a lead"} at {company or "unknown company"} (Turkish):
 \"\"\"{reply_text}\"\"\"
@@ -173,7 +159,7 @@ Rules:
 
 
 def cold_email_prompt(lead: CleanLead, e: EnrichmentResult) -> str:
-    return f"""You write short, personalized cold emails in TURKISH on behalf of {_COMPANY}
+    return f"""You write short, personalized cold emails in TURKISH on behalf of {get_brand().brief()}
 
 Recipient:
 - Name: {lead.full_name}
@@ -183,7 +169,7 @@ Recipient:
 - Outreach angle: {e.outreach_angle}
 - Key message: {e.key_message}
 
-{_COPYWRITING}
+{_copywriting()}
 
 Write ONE cold email in Turkish.
 
@@ -191,11 +177,11 @@ Requirements:
 - Turkish language, natural and human, NOT mass-marketing.
 - Subject: short, specific, curiosity- or benefit-driven (no clickbait).
 - Body: 100-180 words, personalized to the role/company and pain point.
-- Make the value concrete and cite a proof point (100+ kurum, 37.000+ öğrenci) where natural.
+- Make the value concrete and cite a proof point ({get_brand().proof_short}) where natural.
 - End with a soft CTA.
 - No spammy wording, no false claims.
 - Do NOT add placeholder text like [Your Name] or [Adınız]. Sign off as
-  "Northwind English ekibi".
+  "{get_brand().signature}".
 
 Return a JSON object: {{"email_subject": "...", "email_body": "..."}}
 JSON only. No markdown.

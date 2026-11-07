@@ -1,20 +1,22 @@
 # AI Lead Pipeline
 
-Türkiye'deki **İK profesyonellerine** ulaşmak, onları AI ile zenginleştirmek, skorlamak ve **kişiselleştirilmiş Türkçe outreach** üretmek için uçtan uca, AI destekli bir outbound prototipi — **Northwind English** (online İngilizce konuşma eğitimi) için.
+B2B satış ekipleri için hedef kitleyi bulan, her lead'i AI ile puanlayan, kişiye özel Türkçe mesaj yazan ve gelen cevapları sınıflandıran bir sistem.
+
+Örnek senaryo: İngilizce konuşma eğitimi satan bir şirket, Türkiye'deki İK ve L&D yöneticilerine ulaşmak istiyor. Pipeline LinkedIn'den bu kişileri çeker, kapsam dışı olanları eler, kalanları skorlar ve her biri için LinkedIn DM, takip mesajı ve cold email hazırlar. Ürün bilgisi koda gömülü değil; [`config/brand.yaml`](config/brand.yaml) dosyasını değiştirerek aynı pipeline başka bir ürün için kullanılabilir.
+
+![Zenginleştirilmiş lead'ler](docs/screenshots/leads.png)
 
 ---
 
 ## Sistem ne yapıyor?
 
-1. **Toplar** — LinkedIn'den ünvan + lokasyona göre İK lead'leri çeker (Apify, çerez yok).
-2. **Temizler** — tekilleştirme, normalizasyon, boş satır eleme.
-3. **Niteler** — AI harcamadan ÖNCE Türkiye dışı / İK olmayan / İngilizcesi zaten iyi olanları eler.
-4. **Zenginleştirir** — tek bir AI çağrısıyla: sektör, şirket büyüklüğü, uluslararası tahmini, İngilizce ihtiyaç olasılığı, İK pain point, lead skoru (1–100) ve outreach stratejisi.
-5. **Yazar** — kişiselleştirilmiş **LinkedIn DM** (birincil kanal), **takip mesajı** ve **cold email** (Türkçe).
-6. **Aktarır** — CRM'e hazır CSV ve (opsiyonel) **Google Sheets**.
-7. **Yanıtları sınıflandırır** — gelen yanıtları kategorize edip önerilen CRM statüsü üretir.
-
-**AI çağrı bütçesi: lead başına 3 çağrı** — 1 zenginleştirme + 1 LinkedIn DM + 1 cold email (+ opsiyonel takip / yanıt sınıflandırma).
+1. **Toplar:** LinkedIn'den ünvan ve lokasyona göre lead çeker (Apify, çerez gerekmez).
+2. **Temizler:** tekilleştirme, normalizasyon, boş satırları eleme.
+3. **Niteler:** AI'a gitmeden önce Türkiye dışındaki ve İK/L&D dışı ünvanları kural tabanlı eler.
+4. **Zenginleştirir:** tek AI çağrısıyla sektör, şirket büyüklüğü, uluslararası olma tahmini, eğitim ihtiyacı olasılığı, pain point, lead skoru (1-100) ve outreach açısı.
+5. **Yazar:** kişiselleştirilmiş **LinkedIn DM** (birincil kanal), **takip mesajı** ve **cold email** (Türkçe).
+6. **Aktarır:** CRM'e hazır CSV ve isteğe bağlı **Google Sheets**.
+7. **Cevapları sınıflandırır:** gelen yanıtı kategorize eder, CRM statüsü ve sonraki adımı önerir.
 
 ---
 
@@ -37,15 +39,25 @@ flowchart TD
 
 ---
 
+## Neden bu tasarım
+
+- **Önce ucuz filtre, sonra AI.** Temizleme ve niteleme kural tabanlı çalışır ve AI çağrısından önce gelir. Yanlış ülke ya da alakasız ünvan taşıyan bir lead hiçbir token harcatmaz. Canlı çalıştırmada 180 profilin yaklaşık 48'i bu aşamada elendi.
+- **Lead başına 3 AI çağrısı bütçesi.** Zenginleştirme tek bir çağrıda yapılır (sektör, skor, pain point ve açı aynı JSON'da gelir), ardından DM ve email için birer çağrı. Takip mesajı ve yanıt sınıflandırma ayrı komutlarla, ihtiyaç olduğunda çalışır. Maliyet lead sayısıyla doğrusal ve önceden hesaplanabilir.
+- **Pydantic ile doğrulanan çıktılar.** Her agent yalnızca JSON döndürür; cevap Pydantic modeline parse edilir (örneğin `company_size` yalnızca `SMB | Mid-Market | Enterprise`, `lead_score` 1-100). Geçersiz cevap tenacity ile yeniden denenir, yine olmazsa o lead loglanıp atlanır ve pipeline devam eder.
+- **Marka bilgisi yapılandırmada.** Prompt'lar ürün adını, doğrulanabilir bilgileri ve imzayı `config/brand.yaml` dosyasından okur. AI'a yalnızca bu dosyadaki bilgileri kullanması söylenir, böylece uydurma iddia riski azalır.
+
+---
+
 ## Teknoloji
 
-Python 3.12 · OpenAI API · Apify (`apimaestro/linkedin-profile-search-scraper`) · Pandas · Pydantic · Typer + Rich · gspread / Google Sheets API
+Python 3.9+ · OpenAI API · Apify (`apimaestro/linkedin-profile-search-scraper`) · Pandas · Pydantic · Typer + Rich · gspread / Google Sheets API
 
 ---
 
 ## Kurulum
 
 ```bash
+git clone https://github.com/Yusufefearas/ai-lead-pipeline.git && cd ai-lead-pipeline
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # ardından anahtarları doldur
@@ -63,18 +75,33 @@ cp .env.example .env   # ardından anahtarları doldur
 | `GOOGLE_SHEET_ID` | opsiyonel | Yoksa uyarıyla atlanır. |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | opsiyonel | Service-account anahtar dosyasının yolu. |
 | `MAX_LEADS` | hayır | Varsayılan `100`. |
+| `BRAND_CONFIG` | hayır | Marka dosyasının yolu. Varsayılan `config/brand.yaml`. |
+
+### Marka yapılandırması
+
+Varsayılan dosya kurgusal bir İngilizce eğitim markası (Northwind English) içerir. Kendi ürünün için dosyayı kopyala ve `BRAND_CONFIG` ile göster:
+
+```yaml
+name: Northwind English
+tagline: Online English speaking training for teams in Turkey.
+facts: [...]          # ürün nedir, nasıl çalışır
+proof_points: [...]   # doğrulanabilir rakamlar
+proof_short: 80+ kurum, 12.000+ öğrenci
+buyer_benefits: [...]
+signature: Northwind English ekibi
+```
 
 ---
 
 ## Nasıl çalıştırılır?
 
-**Örnek mod** — tam AI pipeline'ı 5 hazır örnek lead üzerinde çalıştırır. Apify gerekmez (yalnızca OpenAI anahtarı):
+**Örnek mod:** AI pipeline'ını 5 hazır örnek lead üzerinde çalıştırır. Apify gerekmez, yalnızca OpenAI anahtarı:
 
 ```bash
 python -m src.main sample
 ```
 
-**Canlı mod** — Apify ile gerçek lead çeker:
+**Canlı mod:** Apify ile gerçek lead çeker:
 
 ```bash
 python -m src.main run \
@@ -84,14 +111,14 @@ python -m src.main run \
   --max-leads 100
 ```
 
-Bayrak verilmezse `run`, varsayılan İK ünvanları × varsayılan Türk şehirlerini kullanır.
+Bayrak verilmezse `run`, varsayılan İK ünvanları ile varsayılan Türk şehirlerini birleştirir.
 
 **Diğer komutlar:**
 
 ```bash
-python -m src.main followup   # mevcut CSV'ye 2. dokunuş takip mesajı ekler (lead başına 1 AI çağrısı)
-python -m src.main outreach   # DM + email + takibi yeniden üretir (örn. marka dili değişince)
-python -m src.main classify   # gelen yanıtları otomatik sınıflandırır -> kategori + önerilen CRM statüsü
+python -m src.main followup   # mevcut CSV'ye 2. temas takip mesajı ekler (lead başına 1 AI çağrısı)
+python -m src.main outreach   # DM + email + takibi yeniden üretir (örn. brand.yaml değişince)
+python -m src.main classify   # gelen yanıtları sınıflandırır: kategori + önerilen CRM statüsü
 python -m src.main upload     # mevcut CSV'yi Google Sheets'e gönderir
 ```
 
@@ -101,15 +128,17 @@ python -m src.main upload     # mevcut CSV'yi Google Sheets'e gönderir
 - `output/enriched_leads.csv`
 - `output/classified_replies.csv`
 
+![Pipeline çalışırken](docs/screenshots/terminal.png)
+
 ---
 
 ## Çıktı kolonları
 
 `full_name, company, title, linkedin_url, email, location, english_proficiency, company_sector, company_size, international_company, english_training_probability, pain_point, pain_point_reason, lead_score, score_reason, outreach_angle, key_message, linkedin_dm, linkedin_followup, email_subject, email_body, crm_status`
 
-`crm_status` varsayılanı `NEW`.
+`crm_status` varsayılanı `NEW`. Örnek çıktı: [`docs/sample_output.csv`](docs/sample_output.csv).
 
-> **Tahminler hakkında:** `company_sector`, `company_size` (SMB / Mid-Market / Enterprise) ve `international_company` isim + ünvandan üretilen **AI tahminleridir** — doğrulanmış bilgi değil. `english_training_probability` 1–10; `lead_score` 1–100.
+> **Tahminler hakkında:** `company_sector`, `company_size` (SMB / Mid-Market / Enterprise) ve `international_company` isim ve ünvandan üretilen **AI tahminleridir**, doğrulanmış bilgi değildir. `english_training_probability` 1-10, `lead_score` 1-100 aralığındadır.
 
 ---
 
@@ -117,34 +146,34 @@ python -m src.main upload     # mevcut CSV'yi Google Sheets'e gönderir
 
 | Aşama | Tür | Çıktı |
 |---|---|---|
-| Temizleme | kural-bazlı | tekilleştirilmiş, normalize edilmiş lead'ler |
-| Niteleme Filtresi | kural-bazlı | Türkiye dışı ve İK/L&D olmayan ünvanları **AI harcamadan önce** eler |
-| Zenginleştirme Agent'ı | 1 AI çağrısı | sektör, büyüklük, uluslararası, İngilizce olasılığı, pain point, skor, açı, mesaj |
-| LinkedIn DM Agent'ı | 1 AI çağrısı | Türkçe DM (70–120 kelime) |
-| Cold Email Agent'ı | 1 AI çağrısı | Türkçe konu + gövde (100–180 kelime) |
-| Yanıt Sınıflandırma Agent'ı | 1 AI çağrısı | kategori (INTERESTED/QUESTION/NOT_INTERESTED/OUT_OF_OFFICE/UNSUBSCRIBE) + sentiment + önerilen CRM statüsü + sonraki adım |
+| Temizleme | kural tabanlı | tekilleştirilmiş, normalize edilmiş lead'ler |
+| Niteleme Filtresi | kural tabanlı | Türkiye dışı ve İK/L&D dışı ünvanları **AI'dan önce** eler |
+| Zenginleştirme Agent'ı | 1 AI çağrısı | sektör, büyüklük, uluslararası, eğitim ihtiyacı, pain point, skor, açı, mesaj |
+| LinkedIn DM Agent'ı | 1 AI çağrısı | Türkçe DM (70-120 kelime) |
+| Cold Email Agent'ı | 1 AI çağrısı | Türkçe konu + gövde (100-180 kelime) |
+| Yanıt Sınıflandırma Agent'ı | 1 AI çağrısı | kategori (INTERESTED/QUESTION/NOT_INTERESTED/OUT_OF_OFFICE/UNSUBSCRIBE) + sentiment + CRM statüsü + sonraki adım |
 
-Tüm AI agent'ları `BaseAgent`'ı paylaşır (tek OpenAI client, yalnızca-JSON parse, tenacity retry). Patlayan tek bir lead loglanıp atlanır — pipeline'ı durdurmaz.
+Tüm AI agent'ları `BaseAgent`'ı paylaşır: tek OpenAI client, yalnızca JSON parse, tenacity ile retry.
 
 ---
 
-## Deliverability & kanallar (kapsam notları)
+## Kanallar ve kapsam
 
-- **Birincil kanal LinkedIn DM.** Email **keşfi bilinçli olarak KAPALI** — tahmini/kalıp email'ler düşük kaliteli ve doğrulama katmanı olmadan teslim edilemez, bu yüzden toplamıyoruz.
-- **Cold email bir outreach artifact'i olarak üretilir** (copy yeteneği), gönderim için değil. Gerçek gönderim, inbox warming ve email doğrulama (NeverBounce / ZeroBounce vb.) bu prototipin kapsamı dışında.
-- Çerezsiz scraping kullanılır, böylece hiçbir LinkedIn hesabı riske atılmaz.
+- **Birincil kanal LinkedIn DM.** Email keşfi bilerek kapalı: tahmin edilen email adresleri doğrulama katmanı olmadan teslim edilemez.
+- **Cold email bir metin çıktısıdır**, gönderim yapılmaz. Gönderim, inbox warming ve email doğrulama (NeverBounce, ZeroBounce vb.) bu projenin kapsamı dışında.
+- Çerezsiz scraping kullanılır, hiçbir LinkedIn hesabı riske girmez.
+- Bu bir **B2B kurumsal** satış senaryosu: alıcı eğitimi **ekibi için** satın alır. Bu yüzden kişinin kendi İngilizce seviyesi skoru etkilemez; akıcı İngilizce konuşan bir HR Director hâlâ değerli bir alıcıdır.
 
 ### Maliyet kontrolü
 
-- Apify **profil başına** ücretlendirir, alan başına değil — kolon kısmak faturayı düşürmez. Bunun yerine arama başına `max_profiles` sınırlandırılır.
-- Tekrar eden maliyet OpenAI'dır (lead başına 3 çağrı). **Niteleme filtresi zenginleştirmeden önce çalışır**, böylece kapsam dışı lead'ler (yanlış ülke, İK/L&D dışı ünvan) AI adımına hiç ulaşmaz.
-- Not: Bu **B2B kurumsal** bir motion — alıcı eğitimi **ekibi için** alır, bu yüzden kişinin kendi İngilizce seviyesi bir eleme/skor kriteri **değildir** (akıcı bir HR Director hâlâ değerli bir alıcıdır).
+- Apify **profil başına** ücretlendirir, alan başına değil. Kolon kısmak faturayı düşürmez, bunun yerine arama başına `max_profiles` sınırlanır.
+- Tekrarlayan maliyet OpenAI tarafındadır (lead başına 3 çağrı) ve niteleme filtresi bunu doğrudan düşürür.
 
 ---
 
-## Yanıt sınıflandırma (auto-reply)
+## Yanıt sınıflandırma
 
-Gelen yanıtları kategorilere ayırıp önerilen CRM aksiyonu üretir — outbound döngüsünü kapatır:
+Gelen yanıtları kategorilere ayırır ve CRM aksiyonu önerir:
 
 ```bash
 python -m src.main classify   # girdi: data/sample/sample_replies.csv
@@ -160,40 +189,26 @@ python -m src.main classify   # girdi: data/sample/sample_replies.csv
 
 Örnek çıktı: [`docs/sample_classified_replies.csv`](docs/sample_classified_replies.csv).
 
+![Yanıt sınıflandırma](docs/screenshots/classify.png)
+
 ---
 
 ## Google Sheets kurulumu (opsiyonel)
 
-1. Bir Google Cloud service account oluştur, Sheets + Drive API'lerini etkinleştir, JSON anahtarını indir.
+1. Bir Google Cloud service account oluştur, Sheets ve Drive API'lerini etkinleştir, JSON anahtarını indir.
 2. Hedef sheet'i service-account e-postasıyla paylaş.
 3. `.env` içinde `GOOGLE_SHEET_ID` ve `GOOGLE_SERVICE_ACCOUNT_JSON` ayarla.
 
-Bunlar yoksa yükleme atlanır ve CSV yine çalışır.
+Bunlar yoksa yükleme atlanır, CSV yine üretilir.
 
 ---
 
-## Sonuçlar (gerçek çalıştırma)
+## Sonuçlar (canlı çalıştırma)
 
-Türk İK aramalarıyla canlı bir çalıştırma:
+Türkiye'deki İK aramalarıyla yapılan bir çalıştırma:
 
-- **180 ham profil** çekildi → **136 nitelikli lead** (100 minimumunun çok üstünde).
-- Niteleme, AI harcamadan önce ~30 Türkiye dışı ve ~18 İK/L&D dışı lead'i eledi.
-- 136'nın tamamında LinkedIn URL'i, kişiselleştirilmiş Türkçe **LinkedIn DM**, **takip mesajı** ve **cold email** var; 132 farklı şirket.
+- **180 ham profil** çekildi, **136 nitelikli lead** kaldı.
+- Niteleme, AI'dan önce yaklaşık 30 Türkiye dışı ve 18 İK/L&D dışı lead'i eledi.
+- 136 lead'in tamamında LinkedIn URL'i, Türkçe **LinkedIn DM**, **takip mesajı** ve **cold email** var; 132 farklı şirket.
 
-> Gerçek zenginleştirilmiş veri seti, gizlilik (KVKK) için **lokalde ve git-ignored** tutulur. Küçük bir **sentetik** örnek [`docs/sample_output.csv`](docs/sample_output.csv) içinde commit'lenmiştir.
-
-## Ekran görüntüleri
-
-> Görüntüler **sentetik örnek veriyle** üretilmiştir (gerçek kişisel veri içermez).
-
-**Pipeline çalışırken**
-
-![Pipeline çalışırken](docs/screenshots/terminal.png)
-
-**Zenginleştirilmiş lead'ler**
-
-![Zenginleştirilmiş lead'ler](docs/screenshots/leads.png)
-
-**Yanıt sınıflandırma**
-
-![Yanıt sınıflandırma](docs/screenshots/classify.png)
+> Gerçek veri seti gizlilik (KVKK) nedeniyle yalnızca yerelde tutulur ve git'e eklenmez. Repodaki örnekler ve ekran görüntüleri **sentetik veriyle** üretilmiştir.

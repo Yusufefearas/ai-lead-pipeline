@@ -1,0 +1,33 @@
+# Brand profile used to ground every outreach prompt.
+#
+# This default is a fictional company. Copy this file, fill in your own
+# product and point BRAND_CONFIG (in .env) at the copy.
+# Only list facts you can stand behind: the AI is told to treat them as true.
+
+name: Northwind English
+
+# One sentence: what the product is.
+tagline: Online English speaking training for teams in Turkey.
+
+# What the product is and how it works (shown to the AI as plain bullets).
+facts:
+  - Live 1-on-1 speaking sessions with native English-speaking coaches.
+  - Short 15 or 30 minute sessions that fit around a working day; audio only, no camera.
+  - A short progress note after every session so managers can track improvement.
+  - Levels A1 to C2, with programs built per team or department.
+
+# Verifiable proof points (use naturally, never as hype).
+proof_points:
+  - Used by 80+ companies and 12,000+ learners.
+  - Focus is usable speaking ability, not grammar drills.
+
+# Short Turkish version of the proof points, cited inside messages.
+proof_short: 80+ kurum, 12.000+ öğrenci
+
+# Why the buyer (HR / L&D) cares.
+buyer_benefits:
+  - Builds employees' confidence to speak English in meetings, with global teams and with customers.
+  - Measurable progress, flexible scheduling, predictable per-person cost.
+
+# Sign-off line used at the end of every DM and email.
+signature: Northwind English ekibi

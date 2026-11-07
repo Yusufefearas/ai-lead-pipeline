@@ -23,6 +23,7 @@ class Settings:
     google_sheet_id: str | None
     google_service_account_json: str | None
     max_leads: int
+    brand_config: str
 
 
 class MissingConfigError(RuntimeError):
@@ -62,6 +63,7 @@ def get_settings() -> Settings:
         google_sheet_id=os.getenv("GOOGLE_SHEET_ID"),
         google_service_account_json=os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON"),
         max_leads=_get_int("MAX_LEADS", 100),
+        brand_config=os.getenv("BRAND_CONFIG") or "config/brand.yaml",
     )
 
 

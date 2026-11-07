@@ -19,7 +19,7 @@ from .pipeline import (
 
 app = typer.Typer(
     add_completion=False,
-    help="AI Lead Pipeline - HR lead pipeline for Northwind English",
+    help="AI lead pipeline: find B2B leads, score them and write personalised outreach.",
 )
 
 DEFAULT_JOB_TITLES = [
@@ -83,7 +83,7 @@ def followup() -> None:
 
 @app.command()
 def outreach() -> None:
-    """Regenerate DM + email + follow-up on the existing enriched CSV (e.g. after editing brand voice)."""
+    """Regenerate DM + email + follow-up on the existing enriched CSV (e.g. after editing config/brand.yaml)."""
     regenerate_outreach(OUTPUT_CSV)
 
 
